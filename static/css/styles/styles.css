@@ -6,7 +6,7 @@ body {
 h1 {
     font-size: 84px;
     color: red;
-    text-align: center;
+    text-align: left;
     font-weight: bold;
 }
 
@@ -47,7 +47,7 @@ button {
     align-items: center;
 }
 
-.nav div {
+nav .nav div {
     display: flex;
     justify-content: center;
     align-items: center;
