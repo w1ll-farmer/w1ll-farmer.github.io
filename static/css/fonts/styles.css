@@ -1,0 +1,47 @@
+body {
+    font-family: 'Inria Sans', sans-serif;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 84px;
+    color: red;
+    text-align: center;
+    font-weight: bold;
+}
+
+label, input {
+    display: block;
+    font-size: 40px;
+    width: 100%;
+    max-width: 300px;
+    text-align: left;
+    margin: 0 auto;
+}
+
+input {
+    box-sizing: border-box;
+    padding: 5px;
+    margin-top: 5px;
+}
+
+form {
+    width: 100%;
+    padding: 1rem 0;
+    text-align: center;
+    display: inline-block;
+}
+
+button {
+    margin-top: 10px;
+    padding: 5px 10px;
+}
+.form-container {
+    text-align: center;
+}
+
+@media (min-width: 775px) {
+    h1 {
+        font-size: 60px;
+    }
+}
