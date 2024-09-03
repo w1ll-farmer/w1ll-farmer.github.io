@@ -40,6 +40,18 @@ button {
     text-align: center;
 }
 
+.nav {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 @media (min-width: 775px) {
     h1 {
         font-size: 60px;
