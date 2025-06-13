@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Room Preference Form</title>
+  <script>
+    const NUM_PARTICIPANTS = 7;
+    const NUM_ROOMS = 8;
+
+    // Hungarian Algorithm implementation adapted for your cost matrix
+function hungarianAlgorithm(costMatrix) {
+  const n = costMatrix.length;
+  const m = costMatrix[0].length;
+
+  // Step 1: Subtract row minima
+  for (let i = 0; i < n; i++) {
+    let rowMin = Math.min(...costMatrix[i]);
+    for (let j = 0; j < m; j++) {
+      costMatrix[i][j] -= rowMin;
+    }
+  }
+
+  // Step 2: Subtract column minima
+  for (let j = 0; j < m; j++) {
+    let colMin = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (costMatrix[i][j] < colMin) colMin = costMatrix[i][j];
+    }
+    for (let i = 0; i < n; i++) {
+      costMatrix[i][j] -= colMin;
+    }
+  }
+
+  // Initialize masks and labels
+  const mask = Array.from({ length: n }, () => Array(m).fill(0));
+  const rowCover = Array(n).fill(false);
+  const colCover = Array(m).fill(false);
+
+  let step = 1;
+  let path = [];
+  let pathRow0 = 0;
+  let pathCol0 = 0;
+
+  function findZero() {
+    for (let i = 0; i < n; i++) {
+      if (!rowCover[i]) {
+        for (let j = 0; j < m; j++) {
+          if (!colCover[j] && costMatrix[i][j] === 0) {
+            return [i, j];
+          }
+        }
+      }
+    }
+    return [-1, -1];
+  }
+
+  function findStarInRow(row) {
+    for (let j = 0; j < m; j++) {
+      if (mask[row][j] === 1) return j;
+    }
+    return -1;
+  }
+
+  function findStarInCol(col) {
+    for (let i = 0; i < n; i++) {
+      if (mask[i][col] === 1) return i;
+    }
+    return -1;
+  }
+
+  function findPrimeInRow(row) {
+    for (let j = 0; j < m; j++) {
+      if (mask[row][j] === 2) return j;
+    }
+    return -1;
+  }
+
+  function clearCovers() {
+    for (let i = 0; i < n; i++) rowCover[i] = false;
+    for (let j = 0; j < m; j++) colCover[j] = false;
+  }
+
+  function erasePrimes() {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        if (mask[i][j] === 2) mask[i][j] = 0;
+      }
+    }
+  }
+
+  function step2() {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        if (costMatrix[i][j] === 0 && !rowCover[i] && !colCover[j]) {
+          mask[i][j] = 1; // star it
+          rowCover[i] = true;
+          colCover[j] = true;
+        }
+      }
+    }
+    clearCovers();
+    step = 3;
+  }
+
+  function step3() {
+    let count = 0;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        if (mask[i][j] === 1) {
+          colCover[j] = true;
+        }
+      }
+    }
+    for (let j = 0; j < m; j++) {
+      if (colCover[j]) count++;
+    }
+    if (count >= n || count >= m) {
+      step = 7; // done
+    } else {
+      step = 4;
+    }
+  }
+
+  function step4() {
+    let done = false;
+    let row = -1;
+    let col = -1;
+    while (!done) {
+      [row, col] = findZero();
+      if (row === -1) {
+        done = true;
+        step = 6;
+      } else {
+        mask[row][col] = 2; // prime it
+        let starCol = findStarInRow(row);
+        if (starCol !== -1) {
+          rowCover[row] = true;
+          colCover[starCol] = false;
+        } else {
+          done = true;
+          step = 5;
+          pathRow0 = row;
+          pathCol0 = col;
+        }
+      }
+    }
+  }
+
+  function step5() {
+    path = [];
+    path.push([pathRow0, pathCol0]);
+    let done = false;
+    while (!done) {
+      let r = findStarInCol(path[path.length - 1][1]);
+      if (r !== -1) {
+        path.push([r, path[path.length - 1][1]]);
+      } else {
+        done = true;
+      }
+      if (!done) {
+        let c = findPrimeInRow(path[path.length - 1][0]);
+        path.push([path[path.length - 1][0], c]);
+      }
+    }
+    for (const [r, c] of path) {
+      mask[r][c] = mask[r][c] === 1 ? 0 : 1;
+    }
+    clearCovers();
+    erasePrimes();
+    step = 3;
+  }
+
+  function step6() {
+    let minVal = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (!rowCover[i]) {
+        for (let j = 0; j < m; j++) {
+          if (!colCover[j]) {
+            if (costMatrix[i][j] < minVal) minVal = costMatrix[i][j];
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        if (rowCover[i]) costMatrix[i][j] += minVal;
+        if (!colCover[j]) costMatrix[i][j] -= minVal;
+      }
+    }
+    step = 4;
+  }
+
+  // Run steps
+  step2();
+  while (step !== 7) {
+    switch (step) {
+      case 3: step3(); break;
+      case 4: step4(); break;
+      case 5: step5(); break;
+      case 6: step6(); break;
+    }
+  }
+
+  // Extract assignment from starred zeros
+  const results = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < m; j++) {
+      if (mask[i][j] === 1) {
+        results.push([i, j]);
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+    function createForm(index) {
+      const form = document.createElement("div");
+      form.className = "p-4 border rounded-lg shadow mb-4 bg-white";
+      form.innerHTML = `
+        <label class="block mb-2 text-lg font-semibold">Person ${index + 1} Name:</label>
+        <input type="text" name="name" class="mb-4 w-full p-2 border rounded" required>
+
+        <label class="block mb-2 font-semibold">Rank the bedrooms (1 = top choice):</label>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          ${Array.from({ length: NUM_ROOMS }, (_, roomIndex) => `
+            <div class="flex items-center gap-2">
+              <label class="w-24">Room ${roomIndex + 1}:</label>
+              <select name="room-${roomIndex + 1}" class="p-1 border rounded w-full" required>
+                <option value="">Select rank</option>
+                ${Array.from({ length: NUM_ROOMS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
+              </select>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      return form;
+    }
+
+    function initForms() {
+      const container = document.getElementById("forms-container");
+      for (let i = 0; i < NUM_PARTICIPANTS; i++) {
+        container.appendChild(createForm(i));
+      }
+    }
+
+    function handleSubmit() {
+  const participants = [];
+  const forms = document.querySelectorAll("#forms-container > div");
+
+  for (const formDiv of forms) {
+    const name = formDiv.querySelector('input[name="name"]').value.trim().toLowerCase();
+    const rankToRoom = Array(NUM_ROOMS).fill(null);
+
+    for (let i = 1; i <= NUM_ROOMS; i++) {
+      const select = formDiv.querySelector(`select[name="room-${i}"]`);
+      const rank = parseInt(select.value);
+      if (rank >= 1 && rank <= NUM_ROOMS) {
+        if (rankToRoom[rank - 1] !== null) {
+          alert(`Duplicate rank ${rank} in ${name}'s preferences.`);
+          return;
+        }
+        rankToRoom[rank - 1] = `room ${i}`;
+      }
+    }
+
+    if (rankToRoom.includes(null)) {
+      alert(`Incomplete rankings for ${name || 'Person'}. Please rank all rooms.`);
+      return;
+    }
+
+    participants.push({ name, preferences: rankToRoom });
+  }
+
+  const result = assignRooms(participants);
+
+  // Format the result into a readable string for alert
+  let message = "Final Room Allocation:\n\n";
+  for (const [person, room] of Object.entries(result)) {
+    message += `${capitalize(person)} → ${capitalize(room)}\n`;
+  }
+
+  alert(message);
+
+  // Helper function to capitalize first letter (optional)
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+}
+
+
+    // Allocation Logic
+    function buildCostMatrix(preferences, riggedPerson = "annabel", rigged = true) {
+      const allocation = {};
+      let riggedRoom = null;
+
+      if (rigged) {
+        allocation[riggedPerson] = preferences[riggedPerson][0];
+        riggedRoom = allocation[riggedPerson];
+        delete preferences[riggedPerson];
+
+        for (const person in preferences) {
+          preferences[person] = preferences[person].filter(room => room !== riggedRoom);
+        }
+      }
+
+      const people = Object.keys(preferences);
+      const roomSet = new Set();
+      Object.values(preferences).forEach(prefs => prefs.forEach(r => roomSet.add(r)));
+
+      if (riggedRoom) roomSet.delete(riggedRoom);
+      const allRooms = Array.from(roomSet).sort();
+      const roomIndices = Object.fromEntries(allRooms.map((r, i) => [r, i]));
+
+      const costMatrix = people.map(person => {
+        const row = Array(allRooms.length).fill(100);
+        preferences[person].forEach((room, rank) => {
+          if (room in roomIndices) {
+            row[roomIndices[room]] = rank + 1;
+          }
+        });
+        return row;
+      });
+
+      while (costMatrix.length < allRooms.length) {
+        costMatrix.push(Array(allRooms.length).fill(100));
+      }
+
+      return { costMatrix, people, allRooms, allocation };
+    }
+
+    function assignRooms(rawPrefs) {
+      const preferences = {};
+      rawPrefs.forEach(p => preferences[p.name] = [...p.preferences]);
+
+      const { costMatrix, people, allRooms, allocation } = buildCostMatrix(structuredClone(preferences), "annabel", true);
+
+      const assignments = hungarianAlgorithm(costMatrix);
+
+    assignments.forEach(([i, j]) => {
+        if (i < people.length) {
+        allocation[people[i]] = allRooms[j];
+        }
+    });
+
+      assignments.forEach(([i, j]) => {
+        if (i < people.length) {
+          allocation[people[i]] = allRooms[j];
+        }
+      });
+
+      return allocation;
+    }
+
+    window.onload = initForms;
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Bedroom Preferences</h1>
+    <div id="forms-container"></div>
+    <button onclick="handleSubmit()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      Submit Preferences
+    </button>
+  </div>
+</body>
+</html>
